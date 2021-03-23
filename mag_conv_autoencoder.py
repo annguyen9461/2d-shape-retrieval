@@ -50,6 +50,8 @@ https://pytorch.org/tutorials/recipes/recipes/custom_dataset_transforms_loader.h
 # test_data = datasets.CIFAR10(root='data', train=False, download=True, transform=transform)
 
 # Dataset Class
+
+
 class PNGDataset():
     """png dataset"""
 
@@ -66,16 +68,16 @@ class PNGDataset():
     def __len__(self):
       root = self.root_dir
       list = os.listdir(root)
-      count=len(list)
+      count = len(list)
       print(count)
-      return count  
+      return count
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        img_name = os.path.join(self.root_dir,str(idx)+".png")
-        image = io.imread(img_name)            
+        img_name = os.path.join(self.root_dir, str(idx)+".png")
+        image = io.imread(img_name)
         sample = {'image': image}
 
         if self.transform:
@@ -84,6 +86,8 @@ class PNGDataset():
         return sample
 
 # helper function to show image
+
+
 def show_png(image):
     """Show image"""
     # NOT working for composed
@@ -92,7 +96,7 @@ def show_png(image):
 
     # NOT working
     # if(len(image.shape) == 3):
-      # plt.imshow(np.squeeze(image))
+    # plt.imshow(np.squeeze(image))
     #   print("RUNNN 3")
     # elif(len(image.shape) == 2):
     #   plt.imshow(image)
@@ -107,6 +111,7 @@ def show_png(image):
     #   plt.imshow((image))
     # plt.pause(0.001)
 
+
 def expand2square(pil_img, background_color):
   width, height = pil_img.size
   if width == height:
@@ -120,8 +125,11 @@ def expand2square(pil_img, background_color):
       result.paste(pil_img, ((height - width) // 2, 0))
       return result
 
+
 # Initialize dataset
 png_dataset = PNGDataset(root_dir='/content/drive/MyDrive/png_files')
+
+"""https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python"""
 
 if os.path.isdir('/png_files_processed/'):
     print("Exists")
@@ -129,43 +137,21 @@ else:
     print("Doesn't exists")
     os.mkdir('/png_files_processed')
 
-for i in range (len(png_dataset)-1):
+for i in range(len(png_dataset)-1):
   im = Image.open('/content/drive/MyDrive/png_files/'+str(i)+'.png')
-  im_new = expand2square(im, (0, 0, 0))
+  # Padding
+  im_new = expand2square(im, (255, 255, 255))
+  # Convert to grayscale
   im_new = im_new.convert('LA')
   im_new.save('/png_files_processed/'+str(i)+'.png', quality=95)
 
+# Initialize dataset
 png_dataset_processed = PNGDataset(root_dir='/png_files_processed')
 
 """https://pytorch.org/docs/stable/nn.functional.html?highlight=interpolate#torch.nn.functional.interpolate
 https://www.programcreek.com/python/example/126478/torch.nn.functional.interpolate
 """
 
-# class Rescale(object):
-#     """Rescale the image in a sample to a given size.
-
-#     Args:
-#         output_size (tuple or int): Desired output size. If tuple, output is
-#             matched to output_size. If int, smaller of image edges is matched
-#             to output_size keeping aspect ratio the same.
-#     """
-
-#     def __init__(self, output_size):
-#         assert isinstance(output_size, (int, tuple))
-#         self.output_size = output_size
-
-#     def __call__(self, sample):
-#         image = sample['image']
-
-#         h, w = image.shape[:2]
-
-#         new_h, new_w = self.output_size, self.output_size
-
-#         img = transform.resize(image, (new_h, new_w))
-
-#         # x and y axes are axis 1 and 0 respectively
-
-#         return {'image': img}
 
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
@@ -173,11 +159,13 @@ class ToTensor(object):
     def __call__(self, sample):
         image = sample['image']
 
+        # print(image.shape)
         # swap color axis because
         # numpy image: H x W x C
         # torch image: C X H X W
         image = image.transpose((2, 0, 1))
         return {'image': torch.from_numpy(image)}
+
 
 class Resize(object):
     def __init__(self, output_size):
@@ -187,27 +175,8 @@ class Resize(object):
     def __call__(self, sample):
         image = sample['image']
         image = image.unsqueeze(0)
-        return {'image': F.interpolate(image, size=(self.output_size,self.output_size)).squeeze()}
+        return {'image': F.interpolate(image, size=(self.output_size, self.output_size)).squeeze()}
 
-# JUST FOR TESTING - show_png()
-
-# WORKS:
-# # scale = Rescale(128)
-# scale = transforms.Compose([Rescale(128)])
-# composed = transforms.Compose([ToTensor(), Resize(128)])
-
-# # DOESN'T work
-# composed = transforms.Compose([Rescale(128), ToTensor()])
-# # composed = transforms.ToTensor()
-
-# fig = plt.figure()
-# sample = png_dataset_processed[65]
-# transformed_sample = composed(sample)
-# ax = plt.subplot(1, 3, 2)
-# plt.tight_layout()
-# show_png(**transformed_sample)
-
-# plt.show()
 
 # Converting data to torch.FloatTensor
 transform = ToTensor()
@@ -228,18 +197,22 @@ for i in range(len(train_data)):
         break
 
 #Prepare data loaders
-train_loader = torch.utils.data.DataLoader(train_data, batch_size=32, num_workers=0)
+train_loader = torch.utils.data.DataLoader(
+    train_data, batch_size=32, num_workers=0)
 # test_loader = torch.utils.data.DataLoader(test_data, batch_size=32, num_workers=0)
 
 #Utility functions to un-normalize and display an image
+
+
 def imshow(img):
-    img = img / 2 + 0.5  
-    plt.imshow(np.transpose(img, (1, 2, 0))) 
+    # img = img / 2 + 0.5          # don't need this line
+    plt.imshow(np.transpose(img, (1, 2, 0)))
+
 
 #Obtain one batch of training images
 dataiter = iter(train_loader)
 images = dataiter.next()
-images = np.array(images['image']) # convert images to numpy for display
+images = np.array(images['image'])  # convert images to numpy for display
 
 #Plot the images
 fig = plt.figure(figsize=(8, 8))
@@ -249,19 +222,20 @@ for idx in np.arange(9):
     imshow(images[idx])
 
 #Define the Convolutional Autoencoder
+
+
 class ConvAutoencoder(nn.Module):
     def __init__(self):
         super(ConvAutoencoder, self).__init__()
-       
+
         #Encoder
-        self.conv1 = nn.Conv2d(3, 16, 3, padding=1)  
+        self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
         self.conv2 = nn.Conv2d(16, 4, 3, padding=1)
         self.pool = nn.MaxPool2d(2, 2)
-       
+
         #Decoder
         self.t_conv1 = nn.ConvTranspose2d(4, 16, 2, stride=2)
         self.t_conv2 = nn.ConvTranspose2d(16, 3, 2, stride=2)
-
 
     def forward(self, x):
         x = F.relu(self.conv1(x))
@@ -270,7 +244,7 @@ class ConvAutoencoder(nn.Module):
         x = self.pool(x)
         x = F.relu(self.t_conv1(x))
         x = F.sigmoid(self.t_conv2(x))
-              
+
         return x
 
 
@@ -284,12 +258,14 @@ criterion = nn.BCELoss()
 #Optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
+
 def get_device():
     if torch.cuda.is_available():
         device = 'cuda:0'
     else:
         device = 'cpu'
     return device
+
 
 device = get_device()
 print(device)
@@ -304,7 +280,7 @@ for epoch in range(1, n_epochs+1):
 
     #Training
     for data in train_loader:
-        images, _ = data
+        images = data['image']
         images = images.to(device)
         optimizer.zero_grad()
         outputs = model(images)
@@ -312,7 +288,7 @@ for epoch in range(1, n_epochs+1):
         loss.backward()
         optimizer.step()
         train_loss += loss.item()*images.size(0)
-          
+
     train_loss = train_loss/len(train_loader)
     print('Epoch: {} \tTraining Loss: {:.6f}'.format(epoch, train_loss))
 
@@ -326,12 +302,13 @@ output = model(images)
 # images = images.numpy()
 images = images.cpu().numpy()
 
-batch_size=32
+batch_size = 32
 output = output.view(batch_size, 3, 32, 32)
 output = output.cpu()
 #Original Images
 print("Original Images")
-fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True, sharey=True, figsize=(12,4))
+fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True,
+                         sharey=True, figsize=(12, 4))
 for idx in np.arange(5):
     ax = fig.add_subplot(1, 5, idx+1, xticks=[], yticks=[])
     imshow(images[idx])
@@ -340,7 +317,8 @@ plt.show()
 
 #Reconstructed Images
 print('Reconstructed Images')
-fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True, sharey=True, figsize=(12,4))
+fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True,
+                         sharey=True, figsize=(12, 4))
 for idx in np.arange(5):
     ax = fig.add_subplot(1, 5, idx+1, xticks=[], yticks=[])
     imshow(output[idx])
