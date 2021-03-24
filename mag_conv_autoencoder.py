@@ -16,6 +16,7 @@ import pandas as pd
 from skimage import io, transform
 import torch
 from torch.utils.data import Dataset, DataLoader
+import torchvision
 from torchvision import transforms, utils
 import cv2
 
@@ -42,16 +43,7 @@ plt.ion()
 https://pytorch.org/tutorials/recipes/recipes/custom_dataset_transforms_loader.html
 """
 
-# #Converting data to torch.FloatTensor
-# transform = transforms.ToTensor()
-
-# # Download the training and test datasets
-# train_data = datasets.CIFAR10(root='data', train=True, download=True, transform=transform)
-# test_data = datasets.CIFAR10(root='data', train=False, download=True, transform=transform)
-
 # Dataset Class
-
-
 class PNGDataset():
     """png dataset"""
 
@@ -68,49 +60,22 @@ class PNGDataset():
     def __len__(self):
       root = self.root_dir
       list = os.listdir(root)
-      count = len(list)
+      count=len(list)
       print(count)
-      return count
+      return count  
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        img_name = os.path.join(self.root_dir, str(idx)+".png")
-        image = io.imread(img_name)
+        img_name = os.path.join(self.root_dir,str(idx)+".png")
+        image = io.imread(img_name)            
         sample = {'image': image}
 
         if self.transform:
             sample = self.transform(sample)
 
         return sample
-
-# helper function to show image
-
-
-def show_png(image):
-    """Show image"""
-    # NOT working for composed
-    plt.imshow(image)
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
-    # NOT working
-    # if(len(image.shape) == 3):
-    # plt.imshow(np.squeeze(image))
-    #   print("RUNNN 3")
-    # elif(len(image.shape) == 2):
-    #   plt.imshow(image)
-    #   print("RUNNN 2")
-    # plt.pause(0.001)
-
-    # plt.imshow( tf.shape( tf.squeeze(image) ) )
-
-    # NOT working
-    # if(len(image.shape) == 3):
-    #   image = image.view(-1, 128**2)
-    #   plt.imshow((image))
-    # plt.pause(0.001)
-
 
 def expand2square(pil_img, background_color):
   width, height = pil_img.size
@@ -125,7 +90,6 @@ def expand2square(pil_img, background_color):
       result.paste(pil_img, ((height - width) // 2, 0))
       return result
 
-
 # Initialize dataset
 png_dataset = PNGDataset(root_dir='/content/drive/MyDrive/png_files')
 
@@ -137,9 +101,9 @@ else:
     print("Doesn't exists")
     os.mkdir('/png_files_processed')
 
-for i in range(len(png_dataset)-1):
+for i in range (len(png_dataset)-1):
   im = Image.open('/content/drive/MyDrive/png_files/'+str(i)+'.png')
-  # Padding
+  # Padding 
   im_new = expand2square(im, (255, 255, 255))
   # Convert to grayscale
   im_new = im_new.convert('LA')
@@ -151,7 +115,6 @@ png_dataset_processed = PNGDataset(root_dir='/png_files_processed')
 """https://pytorch.org/docs/stable/nn.functional.html?highlight=interpolate#torch.nn.functional.interpolate
 https://www.programcreek.com/python/example/126478/torch.nn.functional.interpolate
 """
-
 
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
@@ -166,7 +129,6 @@ class ToTensor(object):
         image = image.transpose((2, 0, 1))
         return {'image': torch.from_numpy(image)}
 
-
 class Resize(object):
     def __init__(self, output_size):
         assert isinstance(output_size, (int, tuple))
@@ -175,8 +137,7 @@ class Resize(object):
     def __call__(self, sample):
         image = sample['image']
         image = image.unsqueeze(0)
-        return {'image': F.interpolate(image, size=(self.output_size, self.output_size)).squeeze()}
-
+        return {'image': F.interpolate(image, size=(self.output_size,self.output_size)).squeeze()}
 
 # Converting data to torch.FloatTensor
 transform = ToTensor()
@@ -197,22 +158,19 @@ for i in range(len(train_data)):
         break
 
 #Prepare data loaders
-train_loader = torch.utils.data.DataLoader(
-    train_data, batch_size=32, num_workers=0)
+train_loader = torch.utils.data.DataLoader(train_data, batch_size=32, num_workers=0)
 # test_loader = torch.utils.data.DataLoader(test_data, batch_size=32, num_workers=0)
 
 #Utility functions to un-normalize and display an image
-
-
 def imshow(img):
     # img = img / 2 + 0.5          # don't need this line
-    plt.imshow(np.transpose(img, (1, 2, 0)))
-
+    plt.imshow(np.transpose(img, (1, 2, 0))) 
 
 #Obtain one batch of training images
 dataiter = iter(train_loader)
 images = dataiter.next()
-images = np.array(images['image'])  # convert images to numpy for display
+images = np.array(images['image']) # convert images to numpy for display
+print(torch.min(torch.tensor(images)), torch.max(torch.tensor(images)))
 
 #Plot the images
 fig = plt.figure(figsize=(8, 8))
@@ -221,35 +179,70 @@ for idx in np.arange(9):
     ax = fig.add_subplot(3, 3, idx+1, xticks=[], yticks=[])
     imshow(images[idx])
 
-#Define the Convolutional Autoencoder
+# #Define the Convolutional Autoencoder
+# class ConvAutoencoder(nn.Module):
+#     def __init__(self):
+#         super(ConvAutoencoder, self).__init__()
+       
+#         #Encoder
+#         self.conv1 = nn.Conv2d(3, 16, 3, padding=1)  
+#         self.conv2 = nn.Conv2d(16, 4, 3, padding=1)
+#         self.pool = nn.MaxPool2d(2, 2)
+       
+#         #Decoder
+#         self.t_conv1 = nn.ConvTranspose2d(4, 16, 2, stride=2)
+#         self.t_conv2 = nn.ConvTranspose2d(16, 3, 2, stride=2)
 
 
-class ConvAutoencoder(nn.Module):
+#     def forward(self, x):
+#         x = F.relu(self.conv1(x))
+#         x = self.pool(x)
+#         x = F.relu(self.conv2(x))
+#         x = self.pool(x)
+#         x = F.relu(self.t_conv1(x))
+#         x = F.sigmoid(self.t_conv2(x))
+              
+#         return x
+
+
+# #Instantiate the model
+# model = ConvAutoencoder()
+# print(model)
+
+class Autoencoder(nn.Module):
     def __init__(self):
-        super(ConvAutoencoder, self).__init__()
-
-        #Encoder
-        self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
-        self.conv2 = nn.Conv2d(16, 4, 3, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-
-        #Decoder
-        self.t_conv1 = nn.ConvTranspose2d(4, 16, 2, stride=2)
-        self.t_conv2 = nn.ConvTranspose2d(16, 3, 2, stride=2)
+        super().__init__()        
+        # N, 1, 128, 128
+        self.encoder = nn.Sequential(
+            # channels changed from 1 to 4
+            nn.Conv2d(4, 16, 3, stride=2, padding=1), # -> N, 16, 64, 64
+            nn.ReLU(),
+            nn.Conv2d(16, 32, 3, stride=2, padding=1), # -> N, 32, 32, 32
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 32) # -> N, 64, 1, 1
+        )
+        
+        # N , 64, 1, 1
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(64, 32, 32), # -> N, 32, 32, 32
+            nn.ReLU(),
+            nn.ConvTranspose2d(32, 16, 3, stride=2, padding=1, output_padding=1), # N, 16, 14, 14 (N,16,13,13 without output_padding)
+            nn.ReLU(),
+            nn.ConvTranspose2d(16, 4, 3, stride=2, padding=1, output_padding=1), # N, 4, 28, 28  (N,4,27,27)
+            nn.Sigmoid()
+        )
 
     def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = self.pool(x)
-        x = F.relu(self.conv2(x))
-        x = self.pool(x)
-        x = F.relu(self.t_conv1(x))
-        x = F.sigmoid(self.t_conv2(x))
-
-        return x
-
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return decoded
+    
+ 
+# Note: nn.MaxPool2d -> use nn.MaxUnpool2d, or use different kernelsize, stride etc to compensate...
+# Input [-1, +1] -> use nn.Tanh
 
 #Instantiate the model
-model = ConvAutoencoder()
+model = Autoencoder()
 print(model)
 
 #Loss function
@@ -258,14 +251,12 @@ criterion = nn.BCELoss()
 #Optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-
 def get_device():
     if torch.cuda.is_available():
         device = 'cuda:0'
     else:
         device = 'cpu'
     return device
-
 
 device = get_device()
 print(device)
@@ -280,15 +271,16 @@ for epoch in range(1, n_epochs+1):
 
     #Training
     for data in train_loader:
-        images = data['image']
+        images = data['image']/255
         images = images.to(device)
         optimizer.zero_grad()
-        outputs = model(images)
+        # divide by 255 to convert tensor type float to type byte
+        outputs = model(images/255)
         loss = criterion(outputs, images)
         loss.backward()
         optimizer.step()
         train_loss += loss.item()*images.size(0)
-
+          
     train_loss = train_loss/len(train_loader)
     print('Epoch: {} \tTraining Loss: {:.6f}'.format(epoch, train_loss))
 
@@ -299,16 +291,14 @@ images, labels = dataiter.next()
 #Sample outputs
 images = images.to(device)
 output = model(images)
-# images = images.numpy()
 images = images.cpu().numpy()
 
-batch_size = 32
+batch_size=32
 output = output.view(batch_size, 3, 32, 32)
 output = output.cpu()
 #Original Images
 print("Original Images")
-fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True,
-                         sharey=True, figsize=(12, 4))
+fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True, sharey=True, figsize=(12,4))
 for idx in np.arange(5):
     ax = fig.add_subplot(1, 5, idx+1, xticks=[], yticks=[])
     imshow(images[idx])
@@ -317,8 +307,7 @@ plt.show()
 
 #Reconstructed Images
 print('Reconstructed Images')
-fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True,
-                         sharey=True, figsize=(12, 4))
+fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True, sharey=True, figsize=(12,4))
 for idx in np.arange(5):
     ax = fig.add_subplot(1, 5, idx+1, xticks=[], yticks=[])
     imshow(output[idx])
