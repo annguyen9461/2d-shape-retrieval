@@ -209,12 +209,13 @@ for idx in np.arange(9):
 # model = ConvAutoencoder()
 # print(model)
 
+"""https://github.com/python-engineer/pytorch-examples/blob/master/Autoencoder.ipynb"""
+
 class Autoencoder(nn.Module):
     def __init__(self):
         super().__init__()        
         # N, 1, 128, 128
         self.encoder = nn.Sequential(
-            # channels changed from 1 to 4
             nn.Conv2d(4, 16, 3, stride=2, padding=1), # -> N, 16, 64, 64
             nn.ReLU(),
             nn.Conv2d(16, 32, 3, stride=2, padding=1), # -> N, 32, 32, 32
@@ -262,27 +263,88 @@ device = get_device()
 print(device)
 model.to(device)
 
-#Epochs
-n_epochs = 100
+# #Epochs
+# n_epochs = 100
+# loss_values = []
 
-for epoch in range(1, n_epochs+1):
+# for epoch in range(1, n_epochs+1):
+#     # monitor training loss
+#     train_loss = 0.0
+
+#     # Training
+#     for data in train_loader:
+#         images = data['image']/255
+#         images = images.to(device)
+#         optimizer.zero_grad()
+#         # divide by 255 to convert tensor type float to type byte
+#         outputs = model(images/255)
+#         loss = criterion(outputs, images)
+#         loss.backward()
+#         optimizer.step()
+#         train_loss += loss.item()*images.size(0)
+          
+#     train_loss = train_loss/len(train_loader)
+#     loss_values.append(train_loss)
+#     print('Epoch: {} \tTraining Loss: {:.6f}'.format(epoch, train_loss))
+
+# plt.plot(loss_values)
+
+"""https://discuss.pytorch.org/t/plotting-loss-curve/42632/3"""
+
+# REFERENCE FOR GRAPHING
+# for epoch in range(n_epochs):
+#     running_loss = 0.0
+#     for i, data in enumerate(train_loader, 0):
+#         running_loss =+ loss.item() * images.size(0)
+
+#     loss_values.append(running_loss / len(train_dataset))
+
+# plt.plot(loss_values)
+
+# Point to training loop video
+num_epochs = 50
+outputs = []
+loss_values = []
+
+for epoch in range(num_epochs):
     # monitor training loss
     train_loss = 0.0
 
-    #Training
-    for data in train_loader:
-        images = data['image']/255
-        images = images.to(device)
+    # Training
+    for img in train_loader:
+        recon = model(img['image']/255)
+        loss = criterion(recon, img['image']/255)
+        
         optimizer.zero_grad()
-        # divide by 255 to convert tensor type float to type byte
-        outputs = model(images/255)
-        loss = criterion(outputs, images)
         loss.backward()
         optimizer.step()
         train_loss += loss.item()*images.size(0)
-          
+
     train_loss = train_loss/len(train_loader)
-    print('Epoch: {} \tTraining Loss: {:.6f}'.format(epoch, train_loss))
+    loss_values.append(train_loss)
+    print(f'Epoch:{epoch+1}, Loss:{loss.item():.4f}')
+    outputs.append((epoch, img, recon))
+
+plt.plot(loss_values)
+
+for k in range(0, n_epochs, 4):
+    plt.figure(figsize=(9, 2))
+    plt.gray()
+    imgs = outputs[k][1]['image'].cpu().detach().numpy()
+    recon = outputs[k][2].cpu().detach().numpy()
+    for i, item in enumerate(imgs):
+        if i >= 9: break
+        plt.subplot(2, 9, i+1)
+        # item = item.reshape(-1, 28,28) # -> use for Autoencoder_Linear
+        # item: 1, 28, 28
+        plt.imshow(item[0])
+            
+    for i, item in enumerate(recon):
+        if i >= 9: break
+        plt.subplot(2, 9, 9+i+1) # row_length + i + 1
+        # item = item.reshape(-1, 28,28) # -> use for Autoencoder_Linear
+        # item: 1, 28, 28
+        plt.imshow(item[0])
 
 #Batch of test images
 dataiter = iter(test_loader)
