@@ -90,16 +90,25 @@ def expand2square(pil_img, background_color):
       result.paste(pil_img, ((height - width) // 2, 0))
       return result
 
-# Initialize dataset
+# Initialize datasets
 png_dataset = PNGDataset(root_dir='/content/drive/MyDrive/png_files')
+png_dataset_test = PNGDataset(root_dir='/content/drive/MyDrive/png_files_test')
 
-"""https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python"""
+"""https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python 
+https://stackoverflow.com/questions/3211595/renaming-files-in-a-folder-to-sequential-numbers 
+"""
 
 if os.path.isdir('/png_files_processed/'):
     print("Exists")
 else:
     print("Doesn't exists")
     os.mkdir('/png_files_processed')
+
+if os.path.isdir('/png_files_test_processed/'):
+    print("Exists")
+else:
+    print("Doesn't exists")
+    os.mkdir('/png_files_test_processed')
 
 for i in range (len(png_dataset)-1):
   im = Image.open('/content/drive/MyDrive/png_files/'+str(i)+'.png')
@@ -109,8 +118,17 @@ for i in range (len(png_dataset)-1):
   im_new = im_new.convert('LA')
   im_new.save('/png_files_processed/'+str(i)+'.png', quality=95)
 
-# Initialize dataset
+for i in range (len(png_dataset_test)-1):
+  im = Image.open('/content/drive/MyDrive/png_files_test/'+str(i)+'.png')
+  # Padding 
+  im_new = expand2square(im, (255, 255, 255))
+  # Convert to grayscale
+  im_new = im_new.convert('LA')
+  im_new.save('/png_files_test_processed/'+str(i)+'.png', quality=95)
+
+# Initialize datasets
 png_dataset_processed = PNGDataset(root_dir='/png_files_processed')
+png_test_dataset_processed = PNGDataset(root_dir='/png_files_test_processed')
 
 """https://pytorch.org/docs/stable/nn.functional.html?highlight=interpolate#torch.nn.functional.interpolate
 https://www.programcreek.com/python/example/126478/torch.nn.functional.interpolate
@@ -148,6 +166,7 @@ composed = transforms.Compose([ToTensor(), Resize(128)])
 # test_data = datasets.CIFAR10(root='data', train=False, download=True, transform=transform)
 
 train_data = PNGDataset(root_dir='/png_files_processed', transform=composed)
+test_data = PNGDataset(root_dir='/png_files_test_processed', transform=composed)
 
 for i in range(len(train_data)):
     sample = train_data[i]
@@ -159,7 +178,7 @@ for i in range(len(train_data)):
 
 #Prepare data loaders
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=32, num_workers=0)
-# test_loader = torch.utils.data.DataLoader(test_data, batch_size=32, num_workers=0)
+test_loader = torch.utils.data.DataLoader(test_data, batch_size=32, num_workers=0)
 
 #Utility functions to un-normalize and display an image
 def imshow(img):
@@ -351,12 +370,12 @@ dataiter = iter(test_loader)
 images = dataiter.next()
 
 #Sample outputs
-images = images.to(device)
-output = model(images)
+images = images['image'].to(device)
+output = model(images/255)
 images = images.cpu().numpy()
 
 batch_size=32
-output = output.view(batch_size, 3, 32, 32)
+output = output.view(batch_size, 4, 128, 128)
 output = output.cpu()
 #Original Images
 print("Original Images")
