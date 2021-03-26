@@ -376,7 +376,7 @@ images = images.cpu().numpy()
 
 batch_size=32
 output = output.view(batch_size, 4, 128, 128)
-output = output.cpu()
+output = output.detach().numpy()
 #Original Images
 print("Original Images")
 fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True, sharey=True, figsize=(12,4))
