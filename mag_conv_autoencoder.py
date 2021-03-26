@@ -318,7 +318,9 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        train_loss += loss.item()*images.size(0)
+        # print(type(loss.item()))
+        # print(type(images.size(0)))
+        train_loss += loss.item()*img['image'].size(0)
 
     train_loss = train_loss/len(train_loader)
     loss_values.append(train_loss)
@@ -327,7 +329,7 @@ for epoch in range(num_epochs):
 
 plt.plot(loss_values)
 
-for k in range(0, n_epochs, 4):
+for k in range(0, num_epochs, 4):
     plt.figure(figsize=(9, 2))
     plt.gray()
     imgs = outputs[k][1]['image'].cpu().detach().numpy()
@@ -335,20 +337,18 @@ for k in range(0, n_epochs, 4):
     for i, item in enumerate(imgs):
         if i >= 9: break
         plt.subplot(2, 9, i+1)
-        # item = item.reshape(-1, 28,28) # -> use for Autoencoder_Linear
         # item: 1, 28, 28
         plt.imshow(item[0])
             
     for i, item in enumerate(recon):
         if i >= 9: break
         plt.subplot(2, 9, 9+i+1) # row_length + i + 1
-        # item = item.reshape(-1, 28,28) # -> use for Autoencoder_Linear
         # item: 1, 28, 28
         plt.imshow(item[0])
 
 #Batch of test images
 dataiter = iter(test_loader)
-images, labels = dataiter.next()
+images = dataiter.next()
 
 #Sample outputs
 images = images.to(device)
@@ -364,7 +364,6 @@ fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True, sharey=True, figsize=(12
 for idx in np.arange(5):
     ax = fig.add_subplot(1, 5, idx+1, xticks=[], yticks=[])
     imshow(images[idx])
-    ax.set_title(classes[labels[idx]])
 plt.show()
 
 #Reconstructed Images
@@ -373,5 +372,4 @@ fig, axes = plt.subplots(nrows=1, ncols=5, sharex=True, sharey=True, figsize=(12
 for idx in np.arange(5):
     ax = fig.add_subplot(1, 5, idx+1, xticks=[], yticks=[])
     imshow(output[idx])
-    ax.set_title(classes[labels[idx]])
 plt.show()
