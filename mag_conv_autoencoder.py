@@ -90,41 +90,35 @@ def expand2square(pil_img, background_color):
       result.paste(pil_img, ((height - width) // 2, 0))
       return result
 
-# Initialize datasets
-png_dataset = PNGDataset(root_dir='/content/drive/MyDrive/png_files')
-png_dataset_test = PNGDataset(root_dir='/content/drive/MyDrive/png_files_test')
+def check_dir_exist(path):
+  if os.path.isdir(path):
+    print("Exists")
+  else:
+    print("Doesn't exists")
+    os.mkdir(path)
 
 """https://stackoverflow.com/questions/12201577/how-can-i-convert-an-rgb-image-into-grayscale-in-python 
 https://stackoverflow.com/questions/3211595/renaming-files-in-a-folder-to-sequential-numbers 
 """
 
-if os.path.isdir('/png_files_processed/'):
-    print("Exists")
-else:
-    print("Doesn't exists")
-    os.mkdir('/png_files_processed')
+def process_png_dataset(dataset,rootpath,newpath):
+  for i in range (len(dataset)-1):
+    im = Image.open(rootpath+str(i)+'.png')
+    # Padding 
+    im_new = expand2square(im, (255, 255, 255))
+    # Convert to grayscale
+    im_new = im_new.convert('LA')
+    im_new.save(newpath+str(i)+'.png', quality=95)
 
-if os.path.isdir('/png_files_test_processed/'):
-    print("Exists")
-else:
-    print("Doesn't exists")
-    os.mkdir('/png_files_test_processed')
+# Initialize datasets
+png_dataset = PNGDataset(root_dir='/content/drive/MyDrive/png_files')
+png_dataset_test = PNGDataset(root_dir='/content/drive/MyDrive/png_files_test')
 
-for i in range (len(png_dataset)-1):
-  im = Image.open('/content/drive/MyDrive/png_files/'+str(i)+'.png')
-  # Padding 
-  im_new = expand2square(im, (255, 255, 255))
-  # Convert to grayscale
-  im_new = im_new.convert('LA')
-  im_new.save('/png_files_processed/'+str(i)+'.png', quality=95)
+check_dir_exist('/png_files_processed/')
+check_dir_exist('/png_files_test_processed/')
 
-for i in range (len(png_dataset_test)-1):
-  im = Image.open('/content/drive/MyDrive/png_files_test/'+str(i)+'.png')
-  # Padding 
-  im_new = expand2square(im, (255, 255, 255))
-  # Convert to grayscale
-  im_new = im_new.convert('LA')
-  im_new.save('/png_files_test_processed/'+str(i)+'.png', quality=95)
+process_png_dataset(png_dataset,'/content/drive/MyDrive/png_files/','/png_files_processed/')
+process_png_dataset(png_dataset_test,'/content/drive/MyDrive/png_files_test/','/png_files_test_processed/')
 
 # Initialize datasets
 png_dataset_processed = PNGDataset(root_dir='/png_files_processed')
@@ -233,7 +227,7 @@ for idx in np.arange(9):
 class Autoencoder(nn.Module):
     def __init__(self):
         super().__init__()        
-        # N, 1, 128, 128
+        # N, 4, 128, 128
         self.encoder = nn.Sequential(
             nn.Conv2d(4, 16, 3, stride=2, padding=1), # -> N, 16, 64, 64
             nn.ReLU(),
