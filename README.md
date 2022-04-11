@@ -1,7 +1,6 @@
 RigNet for 2D Characters
 
 This project is inspired by https://github.com/zhan-xu/RigNet and was developed during Google Explore CSResearch 2021-2022.
-The aim 
 
 Abstract:
 2DRigNet is a method that automates the process of rigging or creating a skeletal structure for 2D characters. Given
